@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pixel Defense</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: monospace;
+      background: #111;
+      color: #0f0;
+    }
+    #menu, #game {
+      display: none;
+      padding: 20px;
+      text-align: center;
+    }
+    #menu {
+      display: block;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 1em;
+      margin: 10px;
+      cursor: pointer;
+    }
+    canvas {
+      display: block;
+      margin: 0 auto;
+      background: #222;
+      border: 2px solid #0f0;
+    }
+  </style>
+</head>
+<body>
+  <div id="menu">
+    <h1>Pixel Defense</h1>
+    <button onclick="startGame()">Start Game</button>
+  </div>
+  <div id="game">
+    <canvas id="gameCanvas" width="640" height="480"></canvas>
+    <p>Lives: <span id="lives">10</span> | Money: <span id="money">100</span> | Wave: <span id="wave">1</span></p>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    let lives = 10, money = 100, wave = 1;
+    const tileSize = 32;
+
+    const path = [
+      {x: 0, y: 5}, {x: 5, y: 5}, {x: 5, y: 2}, {x: 10, y: 2}, {x: 10, y: 7}, {x: 19, y: 7}
+    ];
+
+    const towers = [];
+    const enemies = [];
+
+    function startGame() {
+      document.getElementById("menu").style.display = "none";
+      document.getElementById("game").style.display = "block";
+      spawnWave();
+      gameLoop();
+    }
+
+    function spawnWave() {
+      for (let i = 0; i < wave * 5; i++) {
+        setTimeout(() => {
+          enemies.push({x: path[0].x * tileSize, y: path[0].y * tileSize, pathIndex: 0, hp: 100});
+        }, i * 1000);
+      }
+    }
+
+    function placeTower(x, y) {
+      if (money >= 50) {
+        towers.push({x, y, cooldown: 0});
+        money -= 50;
+        updateHUD();
+      }
+    }
+
+    canvas.addEventListener("click", (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = Math.floor((e.clientX - rect.left) / tileSize) * tileSize;
+      const y = Math.floor((e.clientY - rect.top) / tileSize) * tileSize;
+      placeTower(x, y);
+    });
+
+    function updateHUD() {
+      document.getElementById("lives").textContent = lives;
+      document.getElementById("money").textContent = money;
+      document.getElementById("wave").textContent = wave;
+    }
+
+    function gameLoop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw path
+      ctx.fillStyle = "#555";
+      path.forEach(p => ctx.fillRect(p.x * tileSize, p.y * tileSize, tileSize, tileSize));
+
+      // Update enemies
+      for (let e of enemies) {
+        const target = path[e.pathIndex + 1];
+        if (!target) {
+          lives--;
+          enemies.splice(enemies.indexOf(e), 1);
+          updateHUD();
+          if (lives <= 0) {
+            alert("Game Over");
+            location.reload();
+          }
+          continue;
+        }
+        const tx = target.x * tileSize;
+        const ty = target.y * tileSize;
+        const dx = tx - e.x;
+        const dy = ty - e.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 1) {
+          e.pathIndex++;
+        } else {
+          e.x += dx / dist;
+          e.y += dy / dist;
+        }
+        ctx.fillStyle = "red";
+        ctx.fillRect(e.x, e.y, tileSize / 2, tileSize / 2);
+      }
+
+      // Towers
+      for (let t of towers) {
+        ctx.fillStyle = "lime";
+        ctx.fillRect(t.x, t.y, tileSize, tileSize);
+
+        if (t.cooldown <= 0) {
+          const target = enemies.find(e => Math.hypot(e.x - t.x, e.y - t.y) < 100);
+          if (target) {
+            target.hp -= 25;
+            if (target.hp <= 0) {
+              money += 10;
+              enemies.splice(enemies.indexOf(target), 1);
+              updateHUD();
+            }
+            t.cooldown = 30;
+          }
+        } else {
+          t.cooldown--;
+        }
+      }
+
+      requestAnimationFrame(gameLoop);
+    }
+  </script>
+</body>
+</html>
