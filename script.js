@@ -403,29 +403,58 @@ function update() {
         let dy = projectile.targetY - projectile.y;
         let distance = Math.sqrt(dx * dx + dy * dy);
         
-        if (distance < projectile.speed || projectile.target.isDead) {
-            // Hit target or target is dead
-                            if (!projectile.target.isDead) {
-                if (projectile.splashRadius > 0) {
-                    // Splash damage to enemies in radius
-                    enemies.forEach(enemy => {
-                        if (!enemy.isDead) {
-                            let splashDist = getDistance(projectile.targetX, projectile.targetY, enemy.x, enemy.y);
-                            if (splashDist <= projectile.splashRadius) {
-                                // Calculate damage based on distance (more damage closer to center)
-                                let damageMultiplier = 1 - (splashDist / projectile.splashRadius);
-                                let damage = projectile.damage * damageMultiplier;
-                                enemy.health -= damage;
-                                checkEnemyDeath(enemy);
-                            }
+// Update projectiles
+for (let i = projectiles.length - 1; i >= 0; i--) {
+    let projectile = projectiles[i];
+    
+    // Move projectile towards target
+    let dx = projectile.targetX - projectile.x;
+    let dy = projectile.targetY - projectile.y;
+    let distance = Math.sqrt(dx * dx + dy * dy);
+    
+    if (distance < projectile.speed || projectile.target.isDead) {
+        // Hit target or target is dead
+        if (!projectile.target.isDead) {
+            if (projectile.splashRadius > 0) {
+                // Splash damage to enemies in radius
+                enemies.forEach(enemy => {
+                    if (!enemy.isDead) {
+                        let splashDist = getDistance(projectile.targetX, projectile.targetY, enemy.x, enemy.y);
+                        if (splashDist <= projectile.splashRadius) {
+                            // Calculate damage based on distance
+                            let damageMultiplier = 1 - (splashDist / projectile.splashRadius);
+                            let damage = projectile.damage * damageMultiplier;
+                            enemy.health -= damage;
+                            checkEnemyDeath(enemy);
                         }
-                    });
-                } else {
-                    // Direct damage to target
-                    projectile.target.health -= projectile.damage;
-                    checkEnemyDeath(projectile.target);
-                }
-                              });
+                    }
+                });
+            } else {
+                // Direct damage to target
+                projectile.target.health -= projectile.damage;
+                checkEnemyDeath(projectile.target);
+            }
+        }
+        projectiles.splice(i, 1);
+    } else {
+        // Move projectile
+        projectile.x += (dx / distance) * projectile.speed;
+        projectile.y += (dy / distance) * projectile.speed;
+    }
+}
+
+function getDistance(x1, y1, x2, y2) {
+    return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+}
+
+function checkEnemyDeath(enemy) {
+    if (enemy.health <= 0) {
+        enemy.isDead = true;
+        money += enemy.value;
+        enemiesDefeated++;
+        enemiesLeft--;
+        updateGameStats();
+    }
 }
 
 // ==================== Tower Utility ====================
@@ -433,7 +462,7 @@ function getTowerColor(type) {
     switch (type) {
         case "basic": return "#2980b9";
         case "sniper": return "#8e44ad";
-        case "rapid": return "#e67e22";
+        case "splash": return "#e67e22";  // Changed from "rapid" to "splash"
         default: return "#95a5a6";
     }
 }
