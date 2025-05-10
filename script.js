@@ -114,7 +114,8 @@ function confirmBackToMenu() {
 function startGame() {
     gameState = "playing";
     clearInterval(gameLoop);
-    
+    drawMap(); // Force initial map draw
+
     // Reset game variables
     money = 100;
     lives = 10;
