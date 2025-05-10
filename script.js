@@ -433,6 +433,34 @@ for (let i = projectiles.length - 1; i >= 0; i--) {
 } // End of projectile loop
 } // End of update function
 
+function startWave() {
+    if (waveInProgress) return;
+    
+    waveInProgress = true;
+    enemiesLeft = 5 + wave * 2; // Scale enemies with wave number
+    
+    // Create enemy objects
+    for (let i = 0; i < enemiesLeft; i++) {
+        setTimeout(() => {
+            enemies.push({
+                x: mapPath[0].x,
+                y: mapPath[0].y,
+                pathIndex: 0,
+                speed: 1 + wave * 0.2,
+                health: 50 + wave * 10,
+                maxHealth: 50 + wave * 10,
+                damage: 1,
+                value: 10 + wave * 2,
+                size: 12,
+                color: "#ff0000",
+                isDead: false
+            });
+        }, i * 1000); // Stagger enemy spawns
+    }
+    
+    updateGameStats();
+}
+
 // ==================== Tower Utility ====================
 function getTowerColor(type) {
     switch (type) {
